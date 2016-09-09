@@ -44,22 +44,6 @@ if (! function_exists('array_add')) {
     }
 }
 
-if (! function_exists('array_build')) {
-    /**
-     * Build a new array using a callback.
-     *
-     * @param  array  $array
-     * @param  callable  $callback
-     * @return array
-     *
-     * @deprecated since version 5.2.
-     */
-    function array_build($array, callable $callback)
-    {
-        return Arr::build($array, $callback);
-    }
-}
-
 if (! function_exists('array_collapse')) {
     /**
      * Collapse an array of arrays into a single array.
@@ -484,6 +468,14 @@ if (! function_exists('data_set')) {
             } elseif ($overwrite || ! isset($target->{$segment})) {
                 $target->{$segment} = $value;
             }
+        } else {
+            $target = [];
+
+            if ($segments) {
+                data_set($target[$segment], $segments, $value, $overwrite);
+            } elseif ($overwrite) {
+                $target[$segment] = $value;
+            }
         }
 
         return $target;
@@ -509,7 +501,7 @@ if (! function_exists('dd')) {
 
 if (! function_exists('e')) {
     /**
-     * Escape HTML entities in a string.
+     * Escape HTML special characters in a string.
      *
      * @param  \Illuminate\Contracts\Support\Htmlable|string  $value
      * @return string
@@ -520,7 +512,7 @@ if (! function_exists('e')) {
             return $value->toHtml();
         }
 
-        return htmlentities($value, ENT_QUOTES, 'UTF-8', false);
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false);
     }
 }
 
@@ -591,7 +583,7 @@ if (! function_exists('object_get')) {
     }
 }
 
-if (! function_exists('preg_replace_sub')) {
+if (! function_exists('preg_replace_array')) {
     /**
      * Replace a given pattern with each value in the array in sequentially.
      *
@@ -600,13 +592,12 @@ if (! function_exists('preg_replace_sub')) {
      * @param  string  $subject
      * @return string
      */
-    function preg_replace_sub($pattern, &$replacements, $subject)
+    function preg_replace_array($pattern, array $replacements, $subject)
     {
         return preg_replace_callback($pattern, function ($match) use (&$replacements) {
             foreach ($replacements as $key => $value) {
                 return array_shift($replacements);
             }
-
         }, $subject);
     }
 }
@@ -736,11 +727,7 @@ if (! function_exists('str_replace_array')) {
      */
     function str_replace_array($search, array $replace, $subject)
     {
-        foreach ($replace as $value) {
-            $subject = preg_replace('/'.$search.'/', $value, $subject, 1);
-        }
-
-        return $subject;
+        return Str::replaceArray($search, $replace, $subject);
     }
 }
 
@@ -814,6 +801,22 @@ if (! function_exists('studly_case')) {
     }
 }
 
+if (! function_exists('tap')) {
+    /**
+     * Call the given Closure with the given value then return the value.
+     *
+     * @param  mixed  $value
+     * @param  callable  $callback
+     * @return mixed
+     */
+    function tap($value, $callback)
+    {
+        $callback($value);
+
+        return $value;
+    }
+}
+
 if (! function_exists('title_case')) {
     /**
      * Convert a value to title case.
@@ -861,7 +864,7 @@ if (! function_exists('value')) {
 
 if (! function_exists('windows_os')) {
     /**
-     * Determine whether the current envrionment is Windows based.
+     * Determine whether the current environment is Windows based.
      *
      * @return bool
      */

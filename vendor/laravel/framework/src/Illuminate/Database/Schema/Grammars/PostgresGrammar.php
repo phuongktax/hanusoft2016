@@ -28,7 +28,7 @@ class PostgresGrammar extends Grammar
      */
     public function compileTableExists()
     {
-        return 'select * from information_schema.tables where table_name = ?';
+        return 'select * from information_schema.tables where table_schema = ? and table_name = ?';
     }
 
     /**
@@ -61,7 +61,7 @@ class PostgresGrammar extends Grammar
     }
 
     /**
-     * Compile a create table command.
+     * Compile a column addition command.
      *
      * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @param  \Illuminate\Support\Fluent  $command
@@ -121,7 +121,9 @@ class PostgresGrammar extends Grammar
 
         $index = $this->wrap($command->index);
 
-        return "create index {$index} on ".$this->wrapTable($blueprint)." ({$columns})";
+        $algorithm = $command->algorithm ? ' using '.$command->algorithm : '';
+
+        return "create index {$index} on ".$this->wrapTable($blueprint).$algorithm." ({$columns})";
     }
 
     /**
@@ -224,6 +226,26 @@ class PostgresGrammar extends Grammar
         $index = $this->wrap($command->index);
 
         return "alter table {$table} drop constraint {$index}";
+    }
+
+    /**
+     * Compile the command to enable foreign key constraints.
+     *
+     * @return string
+     */
+    public function compileEnableForeignKeyConstraints()
+    {
+        return 'SET CONSTRAINTS ALL IMMEDIATE;';
+    }
+
+    /**
+     * Compile the command to disable foreign key constraints.
+     *
+     * @return string
+     */
+    public function compileDisableForeignKeyConstraints()
+    {
+        return 'SET CONSTRAINTS ALL DEFERRED;';
     }
 
     /**
@@ -403,7 +425,7 @@ class PostgresGrammar extends Grammar
     protected function typeEnum(Fluent $column)
     {
         $allowed = array_map(function ($a) {
-            return "'".$a."'";
+            return "'{$a}'";
         }, $column->allowed);
 
         return "varchar(255) check (\"{$column->name}\" in (".implode(', ', $allowed).'))';
